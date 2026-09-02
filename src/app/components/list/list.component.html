@@ -1,0 +1,7 @@
+<ion-list>
+  @for (item of elementos; track item.id) {
+    <ion-item class="item" (click)="verContenido(item)">
+      <ion-label>{{item.nombre}} / {{item.tipo}}</ion-label>
+    </ion-item>  
+  }
+</ion-list>

@@ -1,0 +1,10 @@
+<ion-list>
+  @for(item of elementos; track item.id; let i = $index) {
+      <ion-item (click)="obtenerElemento(item)">
+      <ion-label> 
+        {{ item.nombre  }} / {{item.edad}} años
+      </ion-label>
+    </ion-item>
+  }
+
+</ion-list>
