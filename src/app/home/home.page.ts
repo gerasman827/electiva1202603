@@ -10,10 +10,11 @@ import { IonHeader, IonToolbar, IonTitle, IonContent,
  } from '@ionic/angular/standalone';
 import { AccordionComponent } from '../components/accordion/accordion.component';
 import { ListComponent } from '../components/list/list.component';
-import { personCircle } from 'ionicons/icons';
+import { accessibilityOutline } from 'ionicons/icons';
 import { addIcons } from 'ionicons';
 import { RouterLink } from '@angular/router';
 import { ArrayComponent } from '../components/array/array.component';
+
 
 
 @Component({
@@ -35,6 +36,7 @@ import { ArrayComponent } from '../components/array/array.component';
     IonItem,
     IonInput,
     FormsModule,
+    IonLabel,
   ],
 })
 export class HomePage {
@@ -45,7 +47,7 @@ export class HomePage {
   public edadPersona: string = "";
 
   constructor() {
-    addIcons({personCircle})
+    addIcons({accessibilityOutline});
   }
 
   public recibirElementoSeleccionado(item: any) {

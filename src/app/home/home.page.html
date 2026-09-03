@@ -1,29 +1,35 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-title>
-      Blank
+      Electiva I
     </ion-title>
+
+    <ion-buttons slot="end">
+      <a [routerLink]=" '/usuarios' ">
+        <ion-label>
+          Usuarios
+        </ion-label>
+        <ion-button [routerLink]=" '/usuarios' ">
+          <ion-icon name="accessibility-outline"></ion-icon>
+        </ion-button>
+      </a>
+
+    </ion-buttons>
+
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
 
- <ion-item>
-    <ion-input [(ngModel)]="nombrePersona"  label="Nombre:"></ion-input>
+  <ion-item>
+    <ion-input [(ngModel)]="nombrePersona" label="Nombre: " placeholder="Ej: Juan Pérez"></ion-input>
   </ion-item>
-  
-   <ion-item>
-    <ion-input label="Edad:" [(ngModel)]="edadPersona"> </ion-input>
+
+  <ion-item>
+    <ion-input Label="Edad: " type="number" [(ngModel)]="edadPersona" placeholder="00"> </ion-input>
   </ion-item>
-{{nombrePersona}}
+  <ion-button color="success">Enviar</ion-button>
 
-{{edadPersona}}
-<ion-button color="success">Enviar</ion-button>
-
-
-
-
-  
   <app-array></app-array>
 
 
