@@ -1,5 +1,5 @@
-export interface PersonaI  {
-  id: number;
+export interface PersonaI {
+  id: string;
   nombre: string;
   edad: number;
 }

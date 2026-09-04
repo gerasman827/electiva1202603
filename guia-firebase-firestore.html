@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Integración de Firebase Firestore en Ionic 8 + Angular Standalone</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #1a1a1a;
+            line-height: 1.5;
+            margin: 40px;
+            font-size: 14px;
+        }
+
+        h1 {
+            color: #0d47a1;
+            border-bottom: 3px solid #0d47a1;
+            padding-bottom: 8px;
+            font-size: 24px;
+        }
+
+        h2 {
+            color: #1565c0;
+            margin-top: 30px;
+            font-size: 18px;
+            border-left: 5px solid #1565c0;
+            padding-left: 10px;
+        }
+
+        h3 {
+            color: #333;
+            font-size: 15px;
+            margin-top: 18px;
+        }
+
+        code {
+            background: #f0f0f0;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'Consolas', monospace;
+            font-size: 12.5px;
+            color: #c7254e;
+        }
+
+        pre {
+            background: #263238;
+            color: #eeffff;
+            padding: 12px 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+
+        .file-path {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #0d47a1;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12.5px;
+            font-weight: bold;
+        }
+
+        .note {
+            background: #fff8e1;
+            border-left: 4px solid #ffb300;
+            padding: 8px 14px;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+
+        .warn {
+            background: #ffebee;
+            border-left: 4px solid #e53935;
+            padding: 8px 14px;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 6px 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #eceff1;
+        }
+
+        ol>li {
+            margin-bottom: 8px;
+        }
+
+        .cover {
+            text-align: center;
+            margin-top: 120px;
+        }
+
+        .cover h1 {
+            border: none;
+            font-size: 30px;
+        }
+
+        .cover p {
+            color: #555;
+            font-size: 14px;
+        }
+
+        .pagebreak {
+            page-break-before: always;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="cover">
+        <h1>Integración de Firebase Firestore<br>en un proyecto Ionic 8 + Angular (Standalone)</h1>
+        <p>Guía paso a paso para implementar un CRUD de usuarios conectado a Cloud Firestore<br>en modo desarrollo
+            (localhost / <code>ionic serve</code>)</p>
+        <p>Proyecto de ejemplo: <code>electivai202603uam</code></p>
+    </div>
+
+    <div class="pagebreak"></div>
+
+    <h1>Guía paso a paso</h1>
+
+    <h2>1. Crear el proyecto y la base de datos en la consola de Firebase</h2>
+    <ol>
+        <li>Entrar a <code>https://console.firebase.google.com/</code> y crear (o abrir) el proyecto.</li>
+        <li>Ir a <b>Configuración del proyecto</b> (ícono de engranaje) → pestaña <b>General</b> → sección "Tus apps" →
+            agregar una app <b>Web</b> (ícono &lt;/&gt;).</li>
+        <li>Copiar el objeto <code>firebaseConfig</code> que Firebase genera (contiene <code>apiKey</code>,
+            <code>authDomain</code>, <code>projectId</code>, <code>storageBucket</code>, <code>messagingSenderId</code>,
+            <code>appId</code>).
+        </li>
+        <li>En el menú lateral ir a <b>Compilación → Firestore Database</b> → clic en <b>Crear base de datos</b>.</li>
+        <li>Seleccionar <b>Modo de prueba</b> ("Test mode"). Esto genera reglas de acceso abierto con vencimiento a 30
+            días, útiles solo para desarrollo:
+            <pre><code>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.time &lt; timestamp.date(2026, 10, 4);
+    }
+  }
+}</code></pre>
+        </li>
+        <li>Elegir la ubicación del servidor sugerida por defecto y confirmar.</li>
+    </ol>
+
+    <h2>2. Instalar las librerías necesarias</h2>
+    <p>Desde la raíz del proyecto Ionic, ejecutar en la terminal:</p>
+    <pre><code>npm install firebase@^11.8.0 --save
+npm install @angular/fire@latest --save
+npm dedupe</code></pre>
+    <table>
+        <tr>
+            <th>Librería</th>
+            <th>Propósito</th>
+        </tr>
+        <tr>
+            <td><code>firebase</code></td>
+            <td>SDK oficial de Firebase (cliente JavaScript/TypeScript)</td>
+        </tr>
+        <tr>
+            <td><code>@angular/fire</code></td>
+            <td>Wrapper de Angular sobre el SDK de Firebase; expone APIs inyectables (<code>Firestore</code>,
+                <code>provideFirestore</code>, etc.) y observables compatibles con RxJS
+            </td>
+        </tr>
+    </table>
+    <div class="note">
+        Verificar con <code>npm ls firebase @angular/fire</code> que ambas dependencias resuelven a una única versión
+        de <code>firebase</code> (sin duplicados anidados), ya que <code>@angular/fire</code> exige un rango específico
+        (revisar su <code>package.json</code>, campo <code>dependencies.firebase</code>).
+    </div>
+
+    <h2>3. Guardar la configuración de Firebase en los <code>environments</code> de Angular</h2>
+    <p>Archivo: <span class="file-path">src/environments/environment.ts</span></p>
+    <pre><code>export const environment = {
+  production: false,
+  firebaseConfig: {
+    apiKey: 'TU_API_KEY',
+    authDomain: 'TU_PROYECTO.firebaseapp.com',
+    projectId: 'TU_PROYECTO',
+    storageBucket: 'TU_PROYECTO.firebasestorage.app',
+    messagingSenderId: 'TU_SENDER_ID',
+    appId: 'TU_APP_ID',
+  },
+};</code></pre>
+
+    <p>Archivo: <span class="file-path">src/environments/environment.prod.ts</span> (mismo contenido, con
+        <code>production: true</code>):
+    </p>
+    <pre><code>export const environment = {
+  production: true,
+  firebaseConfig: {
+    apiKey: 'TU_API_KEY',
+    authDomain: 'TU_PROYECTO.firebaseapp.com',
+    projectId: 'TU_PROYECTO',
+    storageBucket: 'TU_PROYECTO.firebasestorage.app',
+    messagingSenderId: 'TU_SENDER_ID',
+    appId: 'TU_APP_ID',
+  },
+};</code></pre>
+
+    <h2>4. Registrar los providers de Firebase/Firestore en el bootstrap de la app</h2>
+    <p>Archivo: <span class="file-path">src/main.ts</span></p>
+    <p>Agregar las importaciones de <code>@angular/fire/app</code> y <code>@angular/fire/firestore</code>, y añadir los
+        dos providers nuevos
+        dentro del arreglo <code>providers</code> de <code>bootstrapApplication</code>:</p>
+    <pre><code>import { bootstrapApplication } from '@angular/platform-browser';
+import { RouteReuseStrategy, provideRouter, withPreloading, PreloadAllModules } from '@angular/router';
+import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular/standalone';
+import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
+import { provideFirestore, getFirestore } from '@angular/fire/firestore';
+
+import { routes } from './app/app.routes';
+import { AppComponent } from './app/app.component';
+import { environment } from './environments/environment';
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
+    provideIonicAngular(),
+    provideRouter(routes, withPreloading(PreloadAllModules)),
+    provideFirebaseApp(() =&gt; initializeApp(environment.firebaseConfig)),
+    provideFirestore(() =&gt; getFirestore()),
+  ],
+});</code></pre>
+    <div class="note">
+        <code>provideFirebaseApp</code> inicializa la conexión con el proyecto de Firebase usando las credenciales del
+        <code>environment</code>.
+        <code>provideFirestore</code> habilita el módulo de base de datos Firestore para toda la aplicación standalone.
+    </div>
+
+    <h2>5. Definir/ajustar el modelo de datos</h2>
+    <p>Archivo: <span class="file-path">src/app/models/interfaz.ts</span></p>
+    <p>Firestore genera IDs de documento como cadenas de texto, no como números autoincrementales. Por eso el campo
+        <code>id</code>
+        debe ser <code>string</code>:
+    </p>
+    <pre><code>export interface PersonaI {
+  id: string;
+  nombre: string;
+  edad: number;
+}</code></pre>
+
+    <h2>6. Crear el directorio y el servicio de acceso a Firestore</h2>
+    <p>Crear el directorio de servicios (si el proyecto no lo tiene aún): <span
+            class="file-path">src/app/services/</span></p>
+    <p>Dentro de ese directorio, crear el archivo: <span class="file-path">src/app/services/usuarios.service.ts</span>
+    </p>
+    <pre><code>import { Injectable, inject, signal, EnvironmentInjector, runInInjectionContext } from '@angular/core';
+import {
+  Firestore,
+  collection,
+  collectionData,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from '@angular/fire/firestore';
+import { PersonaI } from 'src/app/models/interfaz';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class UsuariosService {
+  private firestore = inject(Firestore);
+  private injector = inject(EnvironmentInjector);
+  private usuariosRef = collection(this.firestore, 'usuarios');
+
+  public misUsuarios = signal&lt;PersonaI[]&gt;([]);
+
+  constructor() {
+    // collectionData emite fuera del contexto de inyección; se restaura con runInInjectionContext
+    runInInjectionContext(this.injector, () =&gt; {
+      collectionData(this.usuariosRef, { idField: 'id' }).subscribe(
+        (usuarios) =&gt; this.misUsuarios.set(usuarios as PersonaI[]),
+      );
+    });
+  }
+
+  agregarUsuario(usuario: Omit&lt;PersonaI, 'id'&gt;) {
+    return addDoc(this.usuariosRef, usuario);
+  }
+
+  editarUsuario(id: string, usuario: Partial&lt;Omit&lt;PersonaI, 'id'&gt;&gt;) {
+    const usuarioDoc = doc(this.firestore, `usuarios/${'$'}{id}`);
+    return updateDoc(usuarioDoc, usuario);
+  }
+
+  eliminarUsuario(id: string) {
+    const usuarioDoc = doc(this.firestore, `usuarios/${'$'}{id}`);
+    return deleteDoc(usuarioDoc);
+  }
+}</code></pre>
+    <table>
+        <tr>
+            <th>Función</th>
+            <th>Qué hace</th>
+        </tr>
+        <tr>
+            <td><code>collection(firestore, 'usuarios')</code></td>
+            <td>Crea la referencia a la colección <code>usuarios</code> dentro de Firestore.</td>
+        </tr>
+        <tr>
+            <td><code>collectionData(..., &#123; idField: 'id' &#125;)</code></td>
+            <td>Escucha en tiempo real los cambios de la colección y expone el ID del documento como propiedad
+                <code>id</code>.
+            </td>
+        </tr>
+        <tr>
+            <td><code>addDoc</code></td>
+            <td>Crea un documento nuevo con ID autogenerado (usado por "agregar usuario").</td>
+        </tr>
+        <tr>
+            <td><code>updateDoc</code></td>
+            <td>Actualiza campos puntuales de un documento existente (usado por "editar usuario").</td>
+        </tr>
+        <tr>
+            <td><code>deleteDoc</code></td>
+            <td>Elimina un documento (usado por "eliminar usuario").</td>
+        </tr>
+        <tr>
+            <td><code>runInInjectionContext</code></td>
+            <td>Evita el warning de Angular por llamar APIs de Firebase fuera del contexto de inyección dentro de un
+                callback asíncrono.</td>
+        </tr>
+    </table>
+
+    <h2>7. Conectar la página/componente al servicio</h2>
+    <p>Archivo: <span class="file-path">src/app/pages/usuarios/usuarios.page.ts</span></p>
+    <p>7.1. Importar el servicio y quitar el import de <code>signal</code> si ya no se usa directamente:</p>
+    <pre><code>import { Component, inject, OnInit } from '@angular/core';
+...
+import { PersonaI } from 'src/app/models/interfaz';
+import { UsuariosService } from 'src/app/services/usuarios.service';</code></pre>
+
+    <p>7.2. Inyectar el servicio y enlazar el signal de usuarios (reemplaza el arreglo local "quemado"):</p>
+    <pre><code>export class UsuariosPage implements OnInit {
+  private alertController = inject(AlertController);
+  private usuariosService = inject(UsuariosService);
+
+  public usuarioSeleccionado: PersonaI | null = null;
+
+  public misUsuarios = this.usuariosService.misUsuarios;
+  ...
+}</code></pre>
+
+    <p>7.3. En el método de <b>agregar</b>, reemplazar la creación local por la llamada al servicio (dentro del
+        <code>handler</code> del botón "Guardar"):
+    </p>
+    <pre><code>handler: (data) =&gt; {
+  this.usuariosService.agregarUsuario({
+    nombre: data.nombre,
+    edad: parseInt(data.edad, 10),
+  });
+},</code></pre>
+
+    <p>7.4. En el método de <b>eliminar</b>:</p>
+    <pre><code>public eliminarUsuario(usuario: PersonaI): void {
+  this.usuariosService.eliminarUsuario(usuario.id);
+}</code></pre>
+
+    <p>7.5. En el método de <b>editar</b>, dentro del <code>handler</code> del botón "Actualizar":</p>
+    <pre><code>handler: (data) =&gt; {
+  if (data.nombre &amp;&amp; data.edad) {
+    this.usuariosService.editarUsuario(usuario.id, {
+      nombre: data.nombre,
+      edad: Number(data.edad),
+    });
+  }
+},</code></pre>
+
+    <h2>8. Enlazar la plantilla HTML con los datos del servicio</h2>
+    <p>Archivo: <span class="file-path">src/app/pages/usuarios/usuarios.page.html</span></p>
+    <p>La plantilla consume directamente el signal <code>misUsuarios()</code> y llama a los métodos del componente (que
+        a su vez delegan en el servicio):</p>
+    <pre><code>@for (usuario of misUsuarios(); track usuario.id; let index = $index) {
+  &lt;ion-item-sliding&gt;
+    &lt;ion-item (click)="validarUsuario(usuario)"&gt;
+      &lt;ion-label&gt;{{ usuario.nombre }}&lt;/ion-label&gt;
+    &lt;/ion-item&gt;
+    &lt;ion-item-options side="end"&gt;
+      &lt;ion-item-option color="warning" (click)="editarUsuario(usuario)"&gt;
+        &lt;ion-icon name="create-outline"&gt;&lt;/ion-icon&gt;
+      &lt;/ion-item-option&gt;
+      &lt;ion-item-option color="danger" (click)="eliminarUsuario(usuario)"&gt;
+        &lt;ion-icon name="trash-outline"&gt;&lt;/ion-icon&gt;
+      &lt;/ion-item-option&gt;
+    &lt;/ion-item-options&gt;
+  &lt;/ion-item-sliding&gt;
+} @empty {
+  &lt;ion-item&gt;
+    &lt;ion-label&gt;No hay usuarios disponibles.&lt;/ion-label&gt;
+  &lt;/ion-item&gt;
+}</code></pre>
+
+    <h2>9. Ejecutar y validar en local</h2>
+    <pre><code>ionic serve</code></pre>
+    <ol>
+        <li>Abrir la página de usuarios en el navegador.</li>
+        <li>Agregar un usuario nuevo con el botón <code>+</code>.</li>
+        <li>Editar y eliminar el usuario creado para validar los tres métodos del CRUD.</li>
+        <li>Confirmar en la consola de Firebase (<b>Firestore Database → pestaña Datos</b>) que la colección
+            <code>usuarios</code> refleja en tiempo real cada operación realizada desde la app.
+        </li>
+    </ol>
+
+    <h2>10. Checklist para replicar en otro proyecto</h2>
+    <ol>
+        <li>Crear proyecto y app web en la consola de Firebase; copiar <code>firebaseConfig</code>.</li>
+        <li>Crear la base de datos Firestore en modo de prueba.</li>
+        <li>Instalar dependencias: <code>firebase</code> (versión compatible) y <code>@angular/fire</code>; verificar
+            con <code>npm ls</code> que no haya duplicados.</li>
+        <li>Pegar <code>firebaseConfig</code> en <code>environment.ts</code> / <code>environment.prod.ts</code>.</li>
+        <li>Agregar <code>provideFirebaseApp</code> y <code>provideFirestore</code> en <code>main.ts</code> (o en
+            <code>app.config.ts</code> si el proyecto usa ese patrón en vez de standalone puro).
+        </li>
+        <li>Ajustar los modelos que usan <code>id</code> para que sean de tipo <code>string</code>.</li>
+        <li>Crear el directorio <code>src/app/services/</code> (si no existe) y dentro un servicio
+            <code>Injectable</code> con <code>collection</code>, <code>collectionData</code>, <code>addDoc</code>,
+            <code>updateDoc</code>, <code>deleteDoc</code>, <code>doc</code> de <code>@angular/fire/firestore</code>.
+        </li>
+        <li>Consumir el servicio desde el componente/página, enlazando su signal a la plantilla.</li>
+        <li>Probar con <code>ionic serve</code> y validar los datos en la consola de Firebase.</li>
+    </ol>
+
+</body>
+
+</html>
