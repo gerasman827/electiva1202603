@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -29,6 +29,7 @@ import {
   arrowUndoOutline,
 } from 'ionicons/icons';
 import { addIcons } from 'ionicons';
+import { UsuariosService } from 'src/app/services/usuarios.service';
 
 @Component({
   selector: 'app-usuarios',
@@ -56,14 +57,11 @@ import { addIcons } from 'ionicons';
 })
 export class UsuariosPage implements OnInit {
   private alertController = inject(AlertController);
+  private usuariosService = inject(UsuariosService);
 
   public usuarioSeleccionado: PersonaI | null = null;
 
-  public misUsuarios = signal<PersonaI[]>([
-    { id: 1, nombre: 'Juan Camilo Sepulveda', edad: 21 },
-    { id: 1, nombre: 'Carlos Alberto', edad: 11 },
-    { id: 1, nombre: 'Lorena Cárdenas', edad: 29 },
-  ]);
+  public misUsuarios = this.usuariosService.misUsuarios;
 
   constructor() {
     addIcons({
@@ -76,7 +74,7 @@ export class UsuariosPage implements OnInit {
     });
   }
 
-  ngOnInit() {}
+  ngOnInit() { }
 
   public async agregarUsuario() {
     const alert = await this.alertController.create({
@@ -90,12 +88,10 @@ export class UsuariosPage implements OnInit {
         {
           text: 'Guardar',
           handler: (data) => {
-            const nuevoUsuario: PersonaI = {
-              id: Date.now(),
+            this.usuariosService.agregarUsuario({
               nombre: data.nombre,
-              edad: parseInt(data.edad, 10),
-            };
-            this.misUsuarios.update((lista) => [nuevoUsuario, ...lista]);
+              edad: parseInt(data.edad, 10)
+            });
           },
         },
       ],
@@ -108,9 +104,7 @@ export class UsuariosPage implements OnInit {
   }
 
   public eliminarUsuario(usuario: PersonaI): void {
-    this.misUsuarios.update((lista) =>
-      lista.filter((item) => item.id !== usuario.id),
-    );
+    this.usuariosService.eliminarUsuario(usuario.id);
   }
 
   async editarUsuario(usuario: PersonaI) {
@@ -136,13 +130,10 @@ export class UsuariosPage implements OnInit {
           text: 'Actualizar',
           handler: (data) => {
             if (data.nombre && data.edad) {
-              this.misUsuarios.update((lista) =>
-                lista.map((item) =>
-                  item.id === usuario.id
-                    ? { ...item, nombre: data.nombre, edad: Number(data.edad) }
-                    : item,
-                ),
-              );
+              this.usuariosService.editarUsuario(usuario.id, {
+                nombre: data.nombre,
+                edad: Number(data.edad),
+              });
             }
           },
         },

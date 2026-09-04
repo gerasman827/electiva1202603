@@ -22,13 +22,26 @@
 <ion-content [fullscreen]="true">
 
   <ion-item>
-    <ion-input [(ngModel)]="nombrePersona" label="Nombre: " placeholder="Ej: Juan Pérez"></ion-input>
+    <ion-input [(ngModel)]="nombreDependencia" label="Dependencia: " placeholder="Sistemas"></ion-input>
   </ion-item>
 
   <ion-item>
-    <ion-input Label="Edad: " type="number" [(ngModel)]="edadPersona" placeholder="00"> </ion-input>
+    <ion-input Label="Ubicación: " type="text" [(ngModel)]="ubicacionDep" placeholder="Planta 2 segundo piso">
+    </ion-input>
   </ion-item>
-  <ion-button color="success">Enviar</ion-button>
+  <ion-button color="success" (click)="crearDependencia()">Crear</ion-button>
+
+  <ion-list>
+    @for(dependencia of misDependencias(); track dependencia.id){
+    <ion-item>
+      <ion-label (click)="dependenciaSeleccionada(dependencia)">
+        {{ dependencia.nombre }} - {{ dependencia.ubicacion }}
+      </ion-label>
+    </ion-item>
+    }
+  </ion-list>
+
+
 
   <app-array></app-array>
 
